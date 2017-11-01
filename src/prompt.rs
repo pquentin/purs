@@ -1,4 +1,7 @@
 use clap::{ArgMatches, App, SubCommand, Arg};
+use std::env;
+use precmd::{shorten_path, repo_status};
+use git2::Repository;
 
 const INSERT_SYMBOL:&str = "❯";
 const COMMAND_SYMBOL:&str = "⬢";
@@ -20,7 +23,19 @@ pub fn display(sub_matches: &ArgMatches) {
     _ => 9,
   };
 
-  print!("%F{{{}}}{}%f ", shell_color, symbol);
+  let my_path = env::current_dir().unwrap();
+  let display_path = shorten_path(my_path.to_str().unwrap());
+
+  let is_dirty = match Repository::discover(my_path) {
+    Ok(repo) => repo_status(&repo),
+    Err(_e) => false,
+  };
+  let mut dirty_indicator = "";
+  if is_dirty {
+      dirty_indicator = "*";
+  }
+
+  print!("%F{{blue}}{}%F{{{}}}{}%F{{3}}{}%f ", display_path, shell_color, symbol, dirty_indicator);
 }
 
 pub fn cli_arguments<'a>() -> App<'a, 'a> {

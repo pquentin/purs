@@ -6,7 +6,7 @@ use regex::Regex;
 use clap::{ArgMatches, App, SubCommand};
 use tico::tico;
 
-fn shorten_path(cwd: &str) -> String {
+pub fn shorten_path(cwd: &str) -> String {
   let friendly_path = match env::home_dir() {
     Some(path) => Regex::new(path.to_str().unwrap()).unwrap().replace(cwd, "~"),
     _ => return String::from("")
@@ -15,18 +15,17 @@ fn shorten_path(cwd: &str) -> String {
   tico(&friendly_path)
 }
 
-fn repo_status(r: &Repository) -> Option<String> {
+pub fn repo_status(r: &Repository) -> bool {
   let mut opts = StatusOptions::new();
   opts.include_untracked(true);
   let head = match r.head() {
     Ok(head) => head,
-    Err(_) => return None
+    Err(_) => return false
   };
 
-  let shorthand = Cyan.paint(head.shorthand().unwrap().to_string());
   let statuses = match r.statuses(Some(&mut opts)) {
     Ok(statuses) => statuses,
-    Err(_) => return None
+    Err(_) => return false
   };
 
   let mut is_dirty = false;
@@ -50,27 +49,9 @@ fn repo_status(r: &Repository) -> Option<String> {
 
     if is_dirty { break }
   }
-  let mut out = vec![shorthand];
-  if is_dirty {
-    out.push(Red.bold().paint("*"));
-  }
-
-  Some(ANSIStrings(&out).to_string())
+  return is_dirty
 }
 
-pub fn display(_sub: &ArgMatches) {
-  let my_path = env::current_dir().unwrap();
-  let display_path = Blue.paint(shorten_path(my_path.to_str().unwrap()));
-
-  let branch = match Repository::discover(my_path) {
-    Ok(repo) => repo_status(&repo),
-    Err(_e) => None,
-  };
-  let display_branch = Cyan.paint(branch.unwrap_or_default());
-
-  println!("");
-  println!("{} {}", display_path, display_branch);
-}
 
 pub fn cli_arguments<'a>() -> App<'a, 'a> {
   SubCommand::with_name("precmd")
