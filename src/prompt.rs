@@ -24,6 +24,11 @@ pub fn display(sub_matches: &ArgMatches) {
   };
 
   let my_path = env::current_dir().unwrap();
+
+  let venv = match env::var("VIRTUAL_ENV") {
+        Ok(val) => format!("({}) ", val.split("/").last().unwrap()),
+        Err(_) => String::new()
+  };
   let display_path = shorten_path(my_path.to_str().unwrap());
 
   let is_dirty = match Repository::discover(my_path) {
@@ -35,7 +40,7 @@ pub fn display(sub_matches: &ArgMatches) {
       dirty_indicator = "*";
   }
 
-  print!("%F{{blue}}{}%F{{{}}}{}%F{{3}}{}%f ", display_path, shell_color, symbol, dirty_indicator);
+  print!("{}%F{{blue}}{}%F{{{}}}{}%F{{3}}{}%f ", venv, display_path, shell_color, symbol, dirty_indicator);
 }
 
 pub fn cli_arguments<'a>() -> App<'a, 'a> {
